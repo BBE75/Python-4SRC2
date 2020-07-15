@@ -5,10 +5,11 @@ import sys
 import socket
 
 host = '127.0.0.1'
-port = 12345
+port_command = 12345
+port_data = 12346
 
 sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-sockfd.connect((host, port))
+sockfd.connect((host, port_command))
 
 auth = 0 
 
@@ -38,8 +39,33 @@ while True:
 					os.close(r)
 					os.wait()
 					print(str(ls_list, 'utf-8'))
-				
 				continue
+			elif cmd == 'pwd':
+				r, w = os.pipe()
+				n = os.fork()
+				if n == 0:
+					os.close(r)
+					os.dup2(w, 1)
+					os.execlp("pwd", "pwd")
+					os.close(w)
+					sys.exit()
+				else:
+					os.close(w)
+					pwd = os.read(r, 1000)
+					os.close(r)
+					os.wait()
+					print(str(pwd, 'utf-8'))
+				continue
+
+			elif cmd.startswith('cd '):
+				try:
+					print('Changement de repertoire pour', cmd.split()[1])
+					os.chdir(cmd.split()[1])
+					print('Succés')
+				except:
+					print('Erreur')
+				continue
+
 			else:
 				sockfd.send(bytes(cmd,'utf-8'))
 
@@ -65,10 +91,10 @@ while True:
 		sockfd.send(bytes(cmd,'utf-8'))
 
 	elif recu == 'RETRY':
-		print("Erreur d'identification, réessayez")
+		print("Erreur d'identification, réessayez.")
 
 	elif recu == 'BYE':
-		print("3 erreurs d'identification, fermeture du programme")
+		print("3 erreurs d'identification, fermeture du programme.")
 		sockfd.close()
 		quit()
 
@@ -78,6 +104,12 @@ while True:
 
 	elif recu == 'NOK':
 		print("Commande non réconnue.")
+	
+	elif recu == 'CDOK':
+		print("Succés de la commande rcd.")
+
+	elif recu == 'NOCD':
+		print("Echec de la commande rcd.")
 
 	elif recu == 'NAUTH':
 		print("BONJ pour vous identifiez.")

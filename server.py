@@ -8,7 +8,8 @@ import time
 import signal
 
 host = '127.0.0.1'
-port = 12345
+port_command = 12345
+port_data = 12346
 
 # Ce serveur est un serveur concurrent qui peut gérer plusieurs clients simultanément.
 # on lui passe sur la ligne de commande 1 argument : le port d'écoute.
@@ -32,8 +33,8 @@ signal.signal(signal.SIGCHLD,signal.SIG_IGN)
 sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 sockfd.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 try:
-	print('Listening on ', host, ':', port)
-	sockfd.bind((host, port))
+	print('Listening on ', host, ':', port_command)
+	sockfd.bind((host, port_command))
 except socket.error as msg:
 		print("Erreur :",msg)
 		sys.exit()
@@ -79,6 +80,29 @@ while True:
 										ls_list = os.read(r, 1000)
 										os.close(r)
 										envoi(connfd, str(ls_list, 'utf-8'))
+
+								elif cmd == 'rpwd':
+									r, w = os.pipe()
+									pwd_pid = os.fork()
+									if pwd_pid == 0:
+										os.close(r)
+										os.dup2(w, 1)
+										os.execlp("pwd", "pwd")
+										os.close(w)
+										sys.exit()
+
+									if pwd_pid != 0:
+										os.close(w)
+										pwd = os.read(r, 1000)
+										os.close(r)
+										envoi(connfd, str(pwd, 'utf-8'))
+								
+								elif cmd.startswith('rcd '):
+									try:
+										os.chdir(cmd.split()[1])
+										envoi(connfd,'CDOK')
+									except:
+										envoi(connfd,'NOCD')
 								else:
 									envoi(connfd, 'NOK')
 
