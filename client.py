@@ -8,21 +8,22 @@ host = '127.0.0.1'
 port_command = 12345
 
 sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-sockfd.connect((host, port_command))
+sockfd.connect((host, port_command)) # Connexion au socket
 
-auth = 0 
+auth = 0 	# Variable qui sert à tracker l'authentification
+			# 0 non authen, 1 en cours d'auth, 2 authentifié
 
 while True:
-	if auth != 1:
+	if auth != 1: # Si l'utilisateur n'est pas en cours d'auth
 		cmd = input("Tapez votre commande:\n")
 		
-		if cmd == 'QUIT':
+		if cmd == 'QUIT': # On ferme le programme proprement
 			sockfd.send(bytes(cmd,'utf-8'))
 			print('Fermeture du programme.')
 			sockfd.close()
 			quit()
 
-		if auth == 2:
+		if auth == 2: # Si authentifié on peut executer les commandes
 			if cmd == 'ls':
 				r, w = os.pipe()
 				n = os.fork()
@@ -39,6 +40,7 @@ while True:
 					os.wait()
 					print(str(ls_list, 'utf-8'))
 				continue
+			
 			elif cmd == 'pwd':
 				r, w = os.pipe()
 				n = os.fork()
