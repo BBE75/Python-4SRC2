@@ -6,7 +6,6 @@ import socket
 
 host = '127.0.0.1'
 port_command = 12345
-port_data = 12346
 
 sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 sockfd.connect((host, port_command))
@@ -79,7 +78,6 @@ while True:
 		print("Serveur déconnecté.")
 		break
 	recu = str(recu, 'utf-8')
-	print(recu)
 
 	if recu == 'WHO':
 		auth = 1
@@ -101,6 +99,18 @@ while True:
 	elif recu == 'WELC':
 		print("Identification réussie, connexion établie.")
 		auth = 2
+
+	elif recu == 'DATA':
+		sock_data=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		sock_data.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+		sock_data.bind(('',0))
+		data_port = str(sock_data.getsockname()[1])
+		sockfd.send(bytes(data_port,'utf-8'))
+		sock_data.listen(1)
+		condata, clientdata = sock_data.accept()
+		data = condata.recv(4096)
+		sock_data.close()
+		print(str(data,'utf-8'))
 
 	elif recu == 'NOK':
 		print("Commande non réconnue.")

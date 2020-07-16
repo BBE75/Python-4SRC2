@@ -9,7 +9,6 @@ import signal
 
 host = '127.0.0.1'
 port_command = 12345
-port_data = 12346
 
 # Ce serveur est un serveur concurrent qui peut gérer plusieurs clients simultanément.
 # on lui passe sur la ligne de commande 1 argument : le port d'écoute.
@@ -42,7 +41,7 @@ sockfd.listen(10)
 while True:
 	print("Attente d'un client")
 	# Attente de connexion
-	connfd,client=sockfd.accept() 
+	connfd,client = sockfd.accept() 
 	# connfd contient un nouvel objet socket et client les coordonnées (IP,port) du client connecté 
 	print("Connection de",client)
 	n = os.fork()	# création d'un processus fils
@@ -66,6 +65,11 @@ while True:
 							while True:
 								cmd = ecoute(connfd)
 								if cmd == 'rls':
+									envoi(connfd,'DATA')
+									data_port = ecoute(connfd)
+									sockdata = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+									sockdata.connect((host, int(data_port)))
+
 									r, w = os.pipe()
 									ls_pid = os.fork()
 									if ls_pid == 0:
@@ -79,9 +83,16 @@ while True:
 										os.close(w)
 										ls_list = os.read(r, 1000)
 										os.close(r)
-										envoi(connfd, str(ls_list, 'utf-8'))
+										envoi(sockdata, str(ls_list, 'utf-8'))
+										sockdata.close()
 
 								elif cmd == 'rpwd':
+									envoi(connfd,'DATA')
+									data_port = ecoute(connfd)
+									sockdata = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+									sockdata.connect((host, int(data_port)))
+
+									
 									r, w = os.pipe()
 									pwd_pid = os.fork()
 									if pwd_pid == 0:
@@ -95,7 +106,7 @@ while True:
 										os.close(w)
 										pwd = os.read(r, 1000)
 										os.close(r)
-										envoi(connfd, str(pwd, 'utf-8'))
+										envoi(sockdata, str(pwd, 'utf-8'))
 								
 								elif cmd.startswith('rcd '):
 									try:
